@@ -10,16 +10,19 @@ const router = createRouter({
       path: "/",
       name: "home",
       component: HomeView,
+      meta: { checkAuth: true, checkAlreadyAuthenticated: false },
     },
     {
       path: "/login",
       name: "login",
       component: LoginView,
+      meta: { checkAuth: false, checkAlreadyAuthenticated: true },
     },
     {
       path: "/signup",
       name: "signup",
       component: SignupView,
+      meta: { checkAuth: false, checkAlreadyAuthenticated: true },
     },
   ],
 });
