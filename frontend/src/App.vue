@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from "vue-router";
+import { RouterView } from "vue-router";
 </script>
 
 <template>
-  <div>
+  <div class="bg-[#18181a] h-[100vh]">
     <RouterView />
   </div>
 </template>
