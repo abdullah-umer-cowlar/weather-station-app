@@ -1,8 +1,16 @@
 import { AxiosRequestConfig } from "axios";
 
+export interface AuthInfo {
+  user: User | null;
+  token: string | null;
+}
+
+export interface User {
+  id: string;
+  email: string;
+}
+
 export interface SignupPayload {
-  firstName: string;
-  lastName: string;
   email: string;
   password: string;
 }
