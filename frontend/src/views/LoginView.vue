@@ -34,7 +34,7 @@ import { RouterLink } from "vue-router";
       </div>
       <button class="btn bg-[#088395] px-10 text-lg">Login</button>
       <p class="text-lg"
-        >New here? <span class="text-[#088395]"><RouterLink to="/">Sign Up</RouterLink></span></p
+        >New here? <span class="text-[#088395]"><RouterLink to="/signup">Sign Up</RouterLink></span></p
       >
     </div>
     <div class="h-full w-1/2">
