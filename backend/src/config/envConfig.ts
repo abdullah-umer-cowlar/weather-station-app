@@ -10,6 +10,9 @@ const envConfig = {
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
   PORT: process.env.PORT,
+  BROKER_HOST: process.env.BROKER_HOST,
+  BROKER_PORT: process.env.BROKER_PORT,
+  DATA_TOPIC: process.env.DATA_TOPIC,
 };
 
 export default envConfig;
