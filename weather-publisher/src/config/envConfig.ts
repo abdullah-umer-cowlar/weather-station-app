@@ -4,7 +4,8 @@ dotenv.config();
 const envConfig = {
   BROKER_HOST: process.env.BROKER_HOST,
   BROKER_PORT: process.env.BROKER_PORT,
-  TOPIC_NAME: process.env.TOPIC_NAME,
+  DATA_TOPIC: process.env.DATA_TOPIC,
+  CONTROL_TOPIC: process.env.CONTROL_TOPIC,
 };
 
 export default envConfig;

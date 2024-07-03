@@ -1,9 +1,7 @@
 import mqtt from "mqtt";
-import dotenv from "dotenv";
 import envConfig from "./config/envConfig";
 import { getRandomFloat } from "./utils";
 
-dotenv.config();
 const client = mqtt.connect(
   `mqtt://${envConfig.BROKER_HOST}:${envConfig.BROKER_PORT}`
 );
@@ -31,7 +29,7 @@ const initSimulator = () => {
         humidity: getRandomFloat(15, 25),
       },
     };
-    client.publish(envConfig.TOPIC_NAME, JSON.stringify(randomData), (err) => {
+    client.publish(envConfig.DATA_TOPIC, JSON.stringify(randomData), (err) => {
       if (err) {
         console.error("Error publishing data:", err);
       }
@@ -44,7 +42,7 @@ client.on("message", (topic, message) => {
   console.log("New message received.");
   console.log("Topic: ", topic);
   console.log("Content: ", message.toString());
-  if (topic === "wsa/control") {
+  if (topic === envConfig.CONTROL_TOPIC) {
     try {
       const data = JSON.parse(message.toString());
       if (!data.command) {
