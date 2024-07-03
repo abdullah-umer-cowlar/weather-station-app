@@ -13,6 +13,12 @@ const envConfig = {
   BROKER_HOST: process.env.BROKER_HOST,
   BROKER_PORT: process.env.BROKER_PORT,
   DATA_TOPIC: process.env.DATA_TOPIC,
+  INFLUX_URL: process.env.INFLUX_URL,
+  INFLUX_TOKEN: process.env.INFLUX_TOKEN,
+  INFLUX_ORG: process.env.INFLUX_ORG,
+  INFLUX_BUCKET: process.env.INFLUX_BUCKET,
+  INFLUX_ADMIN_USERNAME: process.env.INFLUX_ADMIN_USERNAME,
+  INFLUX_ADMIN_PASSWORD: process.env.INFLUX_ADMIN_PASSWORD,
 };
 
 export default envConfig;
