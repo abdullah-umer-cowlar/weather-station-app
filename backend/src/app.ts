@@ -1,20 +1,12 @@
 import express, { Application } from "express";
 import { routes } from "./routes";
-import { sequelize } from "./config/db";
+import { sequelize } from "./config/postgresConn";
+import { mqttClient } from "./config/mqttConn";
 import cors from "cors";
 import envConfig from "./config/envConfig";
-import mqtt from "mqtt";
+import { Point } from "@influxdata/influxdb-client";
+import { writeApi } from "./config/influxConn";
 // import { InfluxDB, FluxTableMetaData } from "@influxdata/influxdb-client";
-
-// import { InfluxDB } from "@influxdata/influxdb-client";
-
-// import { PingAPI } from "@influxdata/influxdb-client-apis";
-
-// import { InfluxDB, Point, HttpError } from "@influxdata/influxdb-client";
-// import { hostname } from "node:os";
-
-// import { InfluxDB } from "@influxdata/influxdb-client";
-// import { SetupAPI } from "@influxdata/influxdb-client-apis";
 
 const PORT = envConfig.PORT || 3000;
 const app: Application = express();
@@ -23,62 +15,68 @@ app.use(express.json());
 app.use(cors());
 app.use("/api", routes);
 
-const startServer = async () => {
+const initPostgres = async () => {
   try {
     await sequelize.authenticate();
     console.log("Database connection has been established successfully.");
-    app.listen(PORT, () => {
-      console.log("Server listening on port", PORT);
-    });
   } catch (error) {
-    console.error("Error initializing server:", error);
+    console.error("Error initializing postgres connection:", error);
   }
 };
 
-startServer();
+const initMqtt = () => {
+  mqttClient.on("error", (err) => {
+    console.error("Error in mqtt client: ", err);
+  });
 
-const mqttClient = mqtt.connect(
-  `mqtt://${envConfig.BROKER_HOST}:${envConfig.BROKER_PORT}`
-);
+  mqttClient.on("connect", () => {
+    console.log("Backend successfully connected to mqtt broker.");
+    console.log("Subscribing to wsa topic...");
+    mqttClient.subscribe(envConfig.DATA_TOPIC!, (err) => {
+      if (err) {
+        console.error("Error subscribing to wsa topic:", err);
+      }
+    });
+  });
+};
 
-mqttClient.on("error", (err) => {
-  console.error("Error in mqtt client: ", err);
-});
-
-mqttClient.on("connect", () => {
-  console.log("Backend successfully connected to mqtt broker.");
-  console.log("Subscribing to wsa topic...");
-  mqttClient.subscribe(envConfig.DATA_TOPIC!, (err) => {
-    if (err) {
-      console.error("Error subscribing to wsa topic:", err);
+const initInfluxWrites = () => {
+  mqttClient.on("message", (topic, message) => {
+    console.log("New message received.");
+    console.log("Topic: ", topic);
+    console.log("Content: ", message.toString());
+    // do we really need this check ? maybe if there are more than one topics, but rn there's only one that is subscribed to
+    if (topic === envConfig.DATA_TOPIC) {
+      try {
+        const weatherDataObj = JSON.parse(message.toString());
+        console.log(weatherDataObj);
+        if (!weatherDataObj.temperature || !weatherDataObj.humidity) {
+          throw new Error("Received invalid weather data object.");
+        }
+        // hardcoded location tag for now, can later make dynamic based on data object when add mutliple locations
+        const newPoint = new Point("weather")
+          .tag("location", "Islamabad")
+          .floatField("temperature", weatherDataObj.temperature)
+          .floatField("humidity", weatherDataObj.humidity);
+        writeApi.writePoint(newPoint);
+        console.log(`Written a new point record: ${newPoint}`);
+      } catch (err) {
+        console.error("Error while processing received message:", err);
+      }
     }
   });
-});
+};
 
-mqttClient.on("message", (topic, message) => {
-  console.log("New message received.");
-  console.log("Topic: ", topic);
-  console.log("Content: ", message.toString());
-  // do we really need this check ? maybe if there are more than one topics, but rn there's only one that is subscribed to
-  if (topic === envConfig.DATA_TOPIC) {
-    try {
-      const data = JSON.parse(message.toString());
-      console.log(data);
-      // if (!data.command) {
-      //   throw new Error("Invalid data, command not found.");
-      // }
-      // if (data.command === "start") {
-      //   initSimulator();
-      // } else if (data.command === "stop") {
-      //   clearInterval(publishTimer);
-      // } else {
-      //   throw new Error("Invalid command.");
-      // }
-    } catch (err) {
-      console.error("Error while processing received message:", err);
-    }
-  }
-});
+const startServer = async () => {
+  await initPostgres();
+  initMqtt();
+  initInfluxWrites();
+  app.listen(PORT, () => {
+    console.log("Server listening on port", PORT);
+  });
+};
+
+startServer();
 
 // const setupInflux = async () => {
 //   console.log("*** ONBOARDING ***");
@@ -116,44 +114,6 @@ mqttClient.on("message", (topic, message) => {
 
 // testInfluxInterfacing();
 
-// console.log("*** WRITE POINTS ***");
-// // create a write API, expecting point timestamps in nanoseconds (can be also 's', 'ms', 'us')
-// const writeApi = new InfluxDB({
-//   url: envConfig.INFLUX_URL!,
-//   token: envConfig.INFLUX_TOKEN,
-// }).getWriteApi(envConfig.INFLUX_ORG!, envConfig.INFLUX_BUCKET!, "ns");
-// // setup default tags for all writes through this API
-// writeApi.useDefaultTags({ location: hostname() });
-
-// // write point with the current (client-side) timestamp
-// const point1 = new Point("temperature")
-//   .tag("example", "write.ts")
-//   .floatField("value", 20 + Math.round(100 * Math.random()) / 10);
-// writeApi.writePoint(point1);
-// console.log(` ${point1}`);
-// // write point with a custom timestamp
-// const point2 = new Point("temperature")
-//   .tag("example", "write.ts")
-//   .floatField("value", 10 + Math.round(100 * Math.random()) / 10)
-//   .timestamp(new Date()); // can be also a number, but in writeApi's precision units (s, ms, us, ns)!
-// writeApi.writePoint(point2);
-// console.log(` ${point2.toLineProtocol(writeApi)}`);
-
-// const closeWriteAPI = async () => {
-//   try {
-//     await writeApi.close();
-//     console.log("FINISHED ... now try ./query.ts");
-//   } catch (e) {
-//     console.error(e);
-//     if (e instanceof HttpError && e.statusCode === 401) {
-//       console.log("Run ./onboarding.js to setup a new InfluxDB database.");
-//     }
-//     console.log("\nFinished ERROR");
-//   }
-// };
-
-// closeWriteAPI();
-
 // const timeout = 10 * 1000; // timeout for ping
 
 // console.log("*** PING STATUS ***");
@@ -176,31 +136,6 @@ mqttClient.on("message", (topic, message) => {
 // }).getQueryApi(envConfig.INFLUX_ORG!);
 // const fluxQuery =
 //   'from(bucket:"wsa") |> range(start: -1d) |> filter(fn: (r) => r._measurement == "temperature")';
-
-// // There are more ways of how to receive results,
-// // the essential ones are shown in functions below.
-// // Execution of a particular function follows
-// // its definition, comment/uncomment it at will.
-// // See also rxjs-query.ts and queryWithParams.mjs .
-
-// // Execute query and receive table metadata and table row values using async iterator.
-// async function iterateRows() {
-//   console.log("*** IterateRows ***");
-//   for await (const { values, tableMeta } of queryApi.iterateRows(fluxQuery)) {
-//     // the following line creates an object for each row
-//     const o = tableMeta.toObject(values);
-//     // console.log(JSON.stringify(o, null, 2))
-//     console.log(
-//       `${o._time} ${o._measurement} in '${o.location}' (${o.example}): ${o._field}=${o._value}`
-//     );
-
-//     // alternatively, you can get only a specific column value without
-//     // the need to create an object for every row
-//     // console.log(tableMeta.get(row, '_time'))
-//   }
-//   console.log("\nIterateRows SUCCESS");
-// }
-// // iterateRows().catch((error) => console.error('IterateRows ERROR', error))
 
 // // Execute query and receive table metadata and rows in a result observer.
 // function queryRows() {
@@ -228,50 +163,3 @@ mqttClient.on("message", (topic, message) => {
 //   });
 // }
 // queryRows();
-
-// // Execute query and collect result rows in a Promise.
-// // Use with caution, it copies the whole stream of results into memory.
-// async function collectRows() {
-//   console.log("\n*** CollectRows ***");
-//   const data = await queryApi.collectRows(
-//     fluxQuery //, you can also specify a row mapper as a second argument
-//   );
-//   data.forEach((x) => console.log(JSON.stringify(x)));
-//   console.log("\nCollect ROWS SUCCESS");
-// }
-// // collectRows().catch((error) => console.error('CollectRows ERROR', error))
-
-// // Execute query and return the whole result as a string.
-// // Use with caution, it copies the whole stream of results into memory.
-// async function queryRaw() {
-//   const result = await queryApi.queryRaw(fluxQuery);
-//   console.log(result);
-//   console.log("\nQueryRaw SUCCESS");
-// }
-// // queryRaw().catch((error) => console.error('QueryRaw ERROR', error))
-
-// // Execute query and receive result CSV lines in an observer
-// function queryLines() {
-//   queryApi.queryLines(fluxQuery, {
-//     next: (line: string) => {
-//       console.log(line);
-//     },
-//     error: (error: Error) => {
-//       console.error(error);
-//       console.log("\nQueryLines ERROR");
-//     },
-//     complete: () => {
-//       console.log("\nQueryLines SUCCESS");
-//     },
-//   });
-// }
-// // queryLines()
-
-// // Execute query and receive result csv lines using async iterable
-// async function iterateLines() {
-//   for await (const line of queryApi.iterateLines(fluxQuery)) {
-//     console.log(line);
-//   }
-//   console.log("\nIterateLines SUCCESS");
-// }
-// // iterateLines().catch((error) => console.error('\nIterateLines ERROR', error))
