@@ -6,7 +6,6 @@ import cors from "cors";
 import envConfig from "./config/envConfig";
 import { Point } from "@influxdata/influxdb-client";
 import { writeApi } from "./config/influxConn";
-// import { InfluxDB, FluxTableMetaData } from "@influxdata/influxdb-client";
 
 const PORT = envConfig.PORT || 3000;
 const app: Application = express();
@@ -77,89 +76,3 @@ const startServer = async () => {
 };
 
 startServer();
-
-// const setupInflux = async () => {
-//   console.log("*** ONBOARDING ***");
-//   const setupApi = new SetupAPI(new InfluxDB({ url: envConfig.INFLUX_URL! }));
-//   try {
-//     const { allowed } = await setupApi.getSetup();
-//     if (allowed) {
-//       await setupApi.postSetup({
-//         body: {
-//           org: envConfig.INFLUX_ORG!,
-//           bucket: envConfig.INFLUX_BUCKET!,
-//           username: envConfig.INFLUX_ADMIN_USERNAME!,
-//           password: envConfig.INFLUX_ADMIN_PASSWORD,
-//           token: envConfig.INFLUX_TOKEN,
-//         },
-//       });
-//       console.log(`InfluxDB '${envConfig.INFLUX_ORG!}' is now onboarded.`);
-//     } else {
-//       console.log(
-//         `InfluxDB '${envConfig.INFLUX_ORG!}' has been already onboarded.`
-//       );
-//     }
-//     console.log("\nFinished SUCCESS");
-//   } catch (e) {
-//     console.error(e);
-//     console.log("\nFinished ERROR");
-//   }
-// };
-
-// setupInflux();
-
-// const testInfluxInterfacing = async () => {
-//   await setupInflux();
-// }
-
-// testInfluxInterfacing();
-
-// const timeout = 10 * 1000; // timeout for ping
-
-// console.log("*** PING STATUS ***");
-// const influxDB = new InfluxDB({ url: envConfig.INFLUX_URL!, timeout });
-// const pingAPI = new PingAPI(influxDB);
-
-// pingAPI
-//   .getPing()
-//   .then(() => {
-//     console.log("\nPing SUCCESS");
-//   })
-//   .catch((error) => {
-//     console.error(error);
-//     console.log("\nFinished ERROR");
-//   });
-
-// const queryApi = new InfluxDB({
-//   url: envConfig.INFLUX_URL!,
-//   token: envConfig.INFLUX_TOKEN,
-// }).getQueryApi(envConfig.INFLUX_ORG!);
-// const fluxQuery =
-//   'from(bucket:"wsa") |> range(start: -1d) |> filter(fn: (r) => r._measurement == "temperature")';
-
-// // Execute query and receive table metadata and rows in a result observer.
-// function queryRows() {
-//   console.log("*** QueryRows ***");
-//   queryApi.queryRows(fluxQuery, {
-//     next: (row: string[], tableMeta: FluxTableMetaData) => {
-//       // the following line creates an object for each row
-//       const o = tableMeta.toObject(row);
-//       // console.log(JSON.stringify(o, null, 2))
-//       console.log(
-//         `${o._time} ${o._measurement} in '${o.location}' (${o.example}): ${o._field}=${o._value}`
-//       );
-
-//       // alternatively, you can get only a specific column value without
-//       // the need to create an object for every row
-//       // console.log(tableMeta.get(row, '_time'))
-//     },
-//     error: (error: Error) => {
-//       console.error(error);
-//       console.log("\nQueryRows ERROR");
-//     },
-//     complete: () => {
-//       console.log("\nQueryRows SUCCESS");
-//     },
-//   });
-// }
-// queryRows();
