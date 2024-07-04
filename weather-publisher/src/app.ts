@@ -8,9 +8,14 @@ const client = mqtt.connect(
 
 let publishTimer = null;
 
+client.on("error", (err) => {
+  console.error("Error in mqtt client: ", err);
+});
+
 client.on("connect", () => {
   console.log("Weather publisher successfully connected to mqtt broker.");
   console.log("Subscribing to control topic...");
+  // put this topic in an envar
   client.subscribe("wsa/control", (err) => {
     if (err) {
       console.error("Error subscribing to control topic:", err);
