@@ -3,7 +3,105 @@ import { ref, onMounted, onBeforeUnmount } from "vue";
 import mqtt, { MqttClient } from "mqtt";
 import envConfig from "../lib/envConfig";
 
-const weatherData = ref<any[]>([]);
+const charts = ref<any>(null);
+// const weatherData = ref<any[]>(
+//   (() => {
+//     const arr = [];
+//     const time = new Date().getTime();
+
+//     for (let i = -19; i <= 0; i += 1) {
+//       arr.push({
+//         x: time + i * 1000,
+//         y: Math.random(),
+//       });
+//     }
+//     return arr;
+//   })(),
+// );
+
+let x = 1;
+setInterval(() => {
+  console.log(x++);
+  chartOptions.series[0].data.push({
+    x: new Date().getTime() + 5 * 1000,
+    y: Math.random(),
+  });
+
+  charts.value?.chart?.update(
+    {
+      series: chartOptions.series,
+    },
+    true,
+    true,
+  );
+}, 2000);
+
+const chartOptions = {
+  chart: {
+    type: "spline",
+  },
+
+  time: {
+    useUTC: false,
+  },
+
+  title: {
+    text: "Live random data",
+  },
+
+  xAxis: {
+    type: "datetime",
+    tickPixelInterval: 150,
+    maxPadding: 0.1,
+  },
+
+  yAxis: {
+    title: {
+      text: "Value",
+    },
+    plotLines: [
+      {
+        value: 0,
+        width: 1,
+        color: "#808080",
+      },
+    ],
+  },
+
+  tooltip: {
+    headerFormat: "<b>{series.name}</b><br/>",
+    pointFormat: "{point.x:%Y-%m-%d %H:%M:%S}<br/>{point.y:.2f}",
+  },
+
+  legend: {
+    enabled: false,
+  },
+
+  exporting: {
+    enabled: false,
+  },
+
+  series: [
+    {
+      name: "Random data",
+      lineWidth: 2,
+      color: "#00E272",
+      data: (() => {
+        const arr = [];
+        const time = new Date().getTime();
+
+        for (let i = -19; i <= 0; i += 1) {
+          arr.push({
+            x: time + i * 1000,
+            y: Math.random(),
+          });
+        }
+        return arr;
+      })(),
+    },
+  ],
+};
+
 let mqttClient: MqttClient | null = null;
 
 const setupMqttConn = () => {
@@ -58,5 +156,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="w-full h-full flex flex-row justify-center items-center text-center"> THIS IS THE HOME PAGE </div>
+  <div class="w-full h-full flex flex-row justify-center items-center text-center">
+    <highcharts :options="chartOptions" ref="charts"></highcharts>
+  </div>
 </template>
