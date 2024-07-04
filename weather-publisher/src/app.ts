@@ -42,6 +42,7 @@ client.on("message", (topic, message) => {
   console.log("New message received.");
   console.log("Topic: ", topic);
   console.log("Content: ", message.toString());
+  // do we really need this check ? maybe if there are more than one topics, but rn there's only one that is subscribed to
   if (topic === envConfig.CONTROL_TOPIC) {
     try {
       const data = JSON.parse(message.toString());
