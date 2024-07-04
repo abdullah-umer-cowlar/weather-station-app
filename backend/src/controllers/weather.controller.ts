@@ -6,20 +6,11 @@ export class WeatherController {
   static getHistory = async (req: Request, res: Response) => {
     try {
       const data = await WeatherService.getAll();
-      console.log(data);
-      return res.status(200).json(data);
-      //   if (user) {
-      //     return res.status(200).json({
-      //       error: false,
-      //       message: "User found successfully",
-      //       data: user,
-      //     });
-      //   } else {
-      //     return res.status(400).json({
-      //       error: true,
-      //       message: "No data found",
-      //     });
-      //   }
+      return res.status(200).json({
+        error: false,
+        message: "Weather data history fetched successfully",
+        data: data,
+      });
     } catch (error) {
       console.error(error);
       return res.status(500).json({
