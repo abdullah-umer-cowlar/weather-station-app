@@ -6,7 +6,7 @@ import { validate } from "class-validator";
 jest.mock("class-validator");
 jest.mock("../src/services/auth.service");
 
-describe("AuthController", () => {
+describe("AuthTests", () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
 
