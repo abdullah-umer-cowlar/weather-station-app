@@ -181,8 +181,9 @@ const setupMqttConn = () => {
 const signout = () => {
   console.log("signout pressed");
   removeSession();
-  router.push("/login");
+  router.push({ name: "login" });
 };
+
 onMounted(() => {
   fetchUserInfo();
   // maybe don't connect at all until historical data fetched ? idk - still better to be connecting in parallel even if weather data still loading
