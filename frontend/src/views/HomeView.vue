@@ -4,14 +4,16 @@ import mqtt, { MqttClient } from "mqtt";
 import envConfig from "../lib/envConfig";
 import { getWeatherHistory } from "../services/weather.service";
 import { formatWeatherData, removeSession } from "../lib/utils";
-import { ChartPoint } from "../lib/types";
+import { ChartPoint, User } from "../lib/types";
 import { useRouter } from "vue-router";
+import { getUser } from "../services/auth.service";
 
 const charts = ref<any>(null);
 const weatherData = ref<{
   temperatureDataPoints: ChartPoint[];
   humidityDataPoints: ChartPoint[];
 }>();
+const user = ref<User | null>(null);
 const weatherHistoryIsLoading = ref<boolean>(true);
 let mqttClient: MqttClient | null = null;
 
@@ -26,6 +28,16 @@ watch(weatherData, updatedWeatherData => {
     }
   }
 });
+
+const fetchUserInfo = async () => {
+  try {
+    const res = await getUser();
+    user.value = res.data;
+    return;
+  } catch (error) {
+    console.error("Could not fetch user info");
+  }
+};
 
 const chartOptions: Highcharts.Options = {
   chart: {
@@ -172,6 +184,7 @@ const signout = () => {
   router.push("/login");
 };
 onMounted(() => {
+  fetchUserInfo();
   // maybe don't connect at all until historical data fetched ? idk - still better to be connecting in parallel even if weather data still loading
   setupMqttConn();
   fetchWeatherHistory();
@@ -197,8 +210,9 @@ onBeforeUnmount(() => {
       <div class="flex flex-row justify-center items-center gap-2 text-sm">
         <p class="font-light">
           Logged in as
+          <span v-if="!user" class="font-bold">...</span>
           <span class="font-bold">
-            {{ "abdullah@gmail.com" }}
+            {{ user?.email }}
           </span>
         </p>
         <button @click="signout" class="btn btn-sm">Signout</button>
