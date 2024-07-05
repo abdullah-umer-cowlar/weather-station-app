@@ -21,11 +21,11 @@ export const formatWeatherData = (data: RawDataPoint[]) => {
 
   data.forEach((rawDataPoint: RawDataPoint) => {
     result.temperatureDataPoints.push({
-      x: rawDataPoint._time,
+      x: Date.parse(rawDataPoint._time),
       y: rawDataPoint.temperature,
     });
     result.humidityDataPoints.push({
-      x: rawDataPoint._time,
+      x: Date.parse(rawDataPoint._time),
       y: rawDataPoint.humidity,
     });
   });

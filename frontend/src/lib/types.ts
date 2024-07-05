@@ -56,6 +56,6 @@ export interface RawDataPoint {
 }
 
 export interface ChartPoint {
-  x: string;
+  x: number;
   y: number;
 }

@@ -1,70 +1,64 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import mqtt, { MqttClient } from "mqtt";
 import envConfig from "../lib/envConfig";
 import { getWeatherHistory } from "../services/weather.service";
 import { formatWeatherData } from "../lib/utils";
+import { ChartPoint } from "../lib/types";
 
 const charts = ref<any>(null);
+const weatherData = ref<{
+  temperatureDataPoints: ChartPoint[];
+  humidityDataPoints: ChartPoint[];
+}>();
+const weatherHistoryIsLoading = ref<boolean>(true);
 let mqttClient: MqttClient | null = null;
 
-const weatherData = ref<any[]>([]);
-
-setInterval(() => {
-  chartOptions.series[0].data.push({
-    x: new Date().getTime() + 5 * 1000,
-    y: Math.random(),
-  });
-
-  charts.value?.chart?.update(
-    {
-      series: chartOptions.series,
-    },
-    true,
-    true,
-  );
-}, 2000);
-
-const fetchWeatherHistory = async () => {
-  try {
-    const res = await getWeatherHistory();
-    console.log(formatWeatherData(res.data));
-    weatherData.value.push(res.data);
-    weatherData.value = res.data;
-    // weatherData.value = res.data.data.
-    // setFeaturedMovies(res.data.movies);
-    // setIsLoading((prevState) => ({
-    //   ...prevState,
-    //   featuredMovies: false
-    // }));
-  } catch (error) {
-    console.error(error);
-    // toast({
-    //   variant: "destructive",
-    //   title: "An error occured",
-    //   description: "There was a problem fetching featured movies."
-    // });
+watch(weatherData, updatedWeatherData => {
+  if (updatedWeatherData?.temperatureDataPoints && updatedWeatherData?.humidityDataPoints) {
+    // chartOptions.series[0].data = updatedWeatherData?.temperatureDataPoints;
+    // chartOptions.series[1].data = updatedWeatherData?.humidityDataPoints;
+    charts.value?.chart?.series[0].setData(updatedWeatherData?.temperatureDataPoints);
+    charts.value?.chart?.series[1].setData(updatedWeatherData?.humidityDataPoints);
+    if (weatherHistoryIsLoading.value) {
+      weatherHistoryIsLoading.value = false;
+    }
   }
-};
+});
 
-const chartOptions = {
+const chartOptions: Highcharts.Options = {
   chart: {
     type: "spline",
+    backgroundColor: "#18181a",
+    borderColor: "#FFFFFF",
   },
   time: {
     useUTC: false,
   },
   title: {
     text: "Live Weather Data",
+    style: {
+      color: "#FFFFFF",
+    },
   },
   xAxis: {
     type: "datetime",
     tickPixelInterval: 150,
     maxPadding: 0.1,
+    labels: {
+      style: {
+        color: "#FFFFFF",
+      },
+    },
   },
   yAxis: {
     title: {
       text: "Value",
+    },
+    labels: {
+      style: {
+        color: "#FFFFFF",
+      },
     },
     plotLines: [
       {
@@ -79,30 +73,50 @@ const chartOptions = {
     pointFormat: "{point.x:%Y-%m-%d %H:%M:%S}<br/>{point.y:.2f}",
   },
   legend: {
-    enabled: false,
+    enabled: true,
+    backgroundColor: "#242426",
+    itemStyle: {
+      color: "#FFFFFF",
+    },
   },
   exporting: {
     enabled: false,
   },
   series: [
     {
-      name: "Random data",
+      type: "spline",
+      name: "Temperature",
       lineWidth: 2,
       color: "#00E272",
-      data: (() => {
-        const arr = [];
-        const time = new Date().getTime();
-
-        for (let i = -19; i <= 0; i += 1) {
-          arr.push({
-            x: time + i * 1000,
-            y: Math.random(),
-          });
-        }
-        return arr;
-      })(),
+      data: [] as ChartPoint[],
+    },
+    {
+      type: "spline",
+      name: "Humidity",
+      lineWidth: 2,
+      color: "#FF4191",
+      data: [] as ChartPoint[],
     },
   ],
+};
+
+const fetchWeatherHistory = async () => {
+  try {
+    const res = await getWeatherHistory();
+    console.log(formatWeatherData(res.data));
+    weatherData.value = formatWeatherData(res.data);
+    // setIsLoading((prevState) => ({
+    //   ...prevState,
+    //   featuredMovies: false
+    // }));
+  } catch (error) {
+    console.error(error);
+    // toast({
+    //   variant: "destructive",
+    //   title: "An error occured",
+    //   description: "There was a problem fetching featured movies."
+    // });
+  }
 };
 
 const setupMqttConn = () => {
@@ -126,12 +140,13 @@ const setupMqttConn = () => {
   // also, what to do if req from db fails ?
   // this needs to be QoS 2
   mqttClient.on("message", (topic, message) => {
-    // console.log("New message received.");
+    console.log("New message received.");
     // do we really need this check ? maybe if there are more than one topics, but rn there's only one that is subscribed to
     if (topic === envConfig.DATA_TOPIC) {
       try {
         const weatherDataObj = JSON.parse(message.toString());
-        // console.log(weatherDataObj);
+        console.log(weatherDataObj);
+
         if (
           !weatherDataObj.weather_data ||
           !weatherDataObj.weather_data.temperature ||
@@ -139,15 +154,44 @@ const setupMqttConn = () => {
         ) {
           throw new Error("Received invalid weather data object.");
         }
-        // weatherData.push(weatherDataObj);
+
+        if (!weatherHistoryIsLoading.value) {
+          const currentTimestamp = Date.now();
+
+          charts.value?.chart?.series[0].addPoint({
+            x: currentTimestamp,
+            y: Number(weatherDataObj.weather_data.temperature),
+          });
+          charts.value?.chart?.series[1].addPoint({
+            x: currentTimestamp,
+            y: Number(weatherDataObj.weather_data.humidity),
+          });
+
+          // chartOptions.series[0].data.push({
+          //   x: currentTimestamp,
+          //   y: weatherDataObj.weather_data.temperature,
+          // });
+          // chartOptions.series[1].data.push({
+          //   x: currentTimestamp,
+          //   y: weatherDataObj.weather_data.humidity,
+          // });
+          // charts.value?.chart?.update(
+          //   {
+          //     series: chartOptions.series,
+          //   },
+          //   true,
+          //   true,
+          // );
+        }
       } catch (err) {
         console.error("Error while processing received message:", err);
       }
     }
   });
 };
-
+Date.now();
 onMounted(() => {
+  // maybe don't connect at all until historical data fetched
   setupMqttConn();
   fetchWeatherHistory();
 });
@@ -161,6 +205,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="w-full h-full flex flex-row justify-center items-center text-center">
+    <!-- cover with a loader until data fetched and set from api -->
     <highcharts :options="chartOptions" ref="charts"></highcharts>
   </div>
 </template>
