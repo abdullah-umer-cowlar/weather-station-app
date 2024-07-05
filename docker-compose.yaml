@@ -89,3 +89,16 @@ services:
     environment:
       - DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on
       - DOCKER_VERNEMQ_ACCEPT_EULA=yes
+
+  publisher:
+    build:
+      context: ./weather-publisher
+      dockerfile: Dockerfile
+    depends_on:
+      broker:
+        condition: service_healthy
+    environment:
+      BROKER_HOST: broker
+      BROKER_PORT: 1883
+      DATA_TOPIC: wsa
+      CONTROL_TOPIC: wsa/control
