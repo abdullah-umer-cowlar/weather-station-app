@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { AuthController } from "../src/controllers/auth.controller";
-import { AuthService } from "../src/services/auth.service";
+import AuthController from "../src/controllers/auth.controller";
+import AuthService from "../src/services/auth.service";
 import { validate } from "class-validator";
 
 jest.mock("class-validator");
