@@ -3,40 +3,43 @@ import bcrypt from "bcryptjs";
 import { generateJwtToken } from "../utils/generateJwtToken";
 import { SignupData } from "../utils/validations";
 
-export class AuthService {
-  static createUser = async (signupData: SignupData) => {
-    const salt = await bcrypt.genSalt(10);
-    const encryptedPassword = await bcrypt.hash(signupData.password, salt);
+const createUser = async (signupData: SignupData) => {
+  const salt = await bcrypt.genSalt(10);
+  const encryptedPassword = await bcrypt.hash(signupData.password, salt);
 
-    return await User.create({
-      email: signupData.email,
-      password: encryptedPassword,
-    });
-  };
+  return await User.create({
+    email: signupData.email,
+    password: encryptedPassword,
+  });
+};
 
-  static getUserById = async (userId: string) => {
-    return await User.findByPk(userId);
-  };
+const getUserById = async (userId: string) => {
+  return await User.findByPk(userId);
+};
 
-  static getUserByEmail = async (email: string, withPassword = false) => {
-    if (withPassword) {
-      return await User.scope("withPassword").findOne({
-        where: { email: email },
-      });
-    }
-    return await User.findOne({
+const getUserByEmail = async (email: string, withPassword = false) => {
+  if (withPassword) {
+    return await User.scope("withPassword").findOne({
       where: { email: email },
     });
-  };
+  }
+  return await User.findOne({
+    where: { email: email },
+  });
+};
 
-  static verifyPassword = async (
-    passwordInput: string,
-    userPassword: string
-  ) => {
-    return await bcrypt.compare(passwordInput, userPassword);
-  };
+const verifyPassword = async (passwordInput: string, userPassword: string) => {
+  return await bcrypt.compare(passwordInput, userPassword);
+};
 
-  static getToken = (userId: string) => {
-    return generateJwtToken(userId);
-  };
-}
+const getToken = (userId: string) => {
+  return generateJwtToken(userId);
+};
+
+export default {
+  createUser,
+  getUserById,
+  getUserByEmail,
+  verifyPassword,
+  getToken,
+};
