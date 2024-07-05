@@ -2,26 +2,15 @@
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import mqtt, { MqttClient } from "mqtt";
 import envConfig from "../lib/envConfig";
+import { getWeatherHistory } from "../services/weather.service";
+import { formatWeatherData } from "../lib/utils";
 
 const charts = ref<any>(null);
-// const weatherData = ref<any[]>(
-//   (() => {
-//     const arr = [];
-//     const time = new Date().getTime();
+let mqttClient: MqttClient | null = null;
 
-//     for (let i = -19; i <= 0; i += 1) {
-//       arr.push({
-//         x: time + i * 1000,
-//         y: Math.random(),
-//       });
-//     }
-//     return arr;
-//   })(),
-// );
+const weatherData = ref<any[]>([]);
 
-let x = 1;
 setInterval(() => {
-  console.log(x++);
   chartOptions.series[0].data.push({
     x: new Date().getTime() + 5 * 1000,
     y: Math.random(),
@@ -36,25 +25,43 @@ setInterval(() => {
   );
 }, 2000);
 
+const fetchWeatherHistory = async () => {
+  try {
+    const res = await getWeatherHistory();
+    console.log(formatWeatherData(res.data));
+    weatherData.value.push(res.data);
+    weatherData.value = res.data;
+    // weatherData.value = res.data.data.
+    // setFeaturedMovies(res.data.movies);
+    // setIsLoading((prevState) => ({
+    //   ...prevState,
+    //   featuredMovies: false
+    // }));
+  } catch (error) {
+    console.error(error);
+    // toast({
+    //   variant: "destructive",
+    //   title: "An error occured",
+    //   description: "There was a problem fetching featured movies."
+    // });
+  }
+};
+
 const chartOptions = {
   chart: {
     type: "spline",
   },
-
   time: {
     useUTC: false,
   },
-
   title: {
-    text: "Live random data",
+    text: "Live Weather Data",
   },
-
   xAxis: {
     type: "datetime",
     tickPixelInterval: 150,
     maxPadding: 0.1,
   },
-
   yAxis: {
     title: {
       text: "Value",
@@ -67,20 +74,16 @@ const chartOptions = {
       },
     ],
   },
-
   tooltip: {
     headerFormat: "<b>{series.name}</b><br/>",
     pointFormat: "{point.x:%Y-%m-%d %H:%M:%S}<br/>{point.y:.2f}",
   },
-
   legend: {
     enabled: false,
   },
-
   exporting: {
     enabled: false,
   },
-
   series: [
     {
       name: "Random data",
@@ -102,8 +105,6 @@ const chartOptions = {
   ],
 };
 
-let mqttClient: MqttClient | null = null;
-
 const setupMqttConn = () => {
   mqttClient = mqtt.connect(`ws://${envConfig.BROKER_HOST}:${envConfig.BROKER_PORT}/mqtt`);
 
@@ -121,14 +122,16 @@ const setupMqttConn = () => {
     });
   });
 
+  // when trying to append it ahead of fetched weather historty data, will need to make sure the values are lining up
+  // also, what to do if req from db fails ?
   // this needs to be QoS 2
   mqttClient.on("message", (topic, message) => {
-    console.log("New message received.");
+    // console.log("New message received.");
     // do we really need this check ? maybe if there are more than one topics, but rn there's only one that is subscribed to
     if (topic === envConfig.DATA_TOPIC) {
       try {
         const weatherDataObj = JSON.parse(message.toString());
-        console.log(weatherDataObj);
+        // console.log(weatherDataObj);
         if (
           !weatherDataObj.weather_data ||
           !weatherDataObj.weather_data.temperature ||
@@ -146,6 +149,7 @@ const setupMqttConn = () => {
 
 onMounted(() => {
   setupMqttConn();
+  fetchWeatherHistory();
 });
 
 onBeforeUnmount(() => {

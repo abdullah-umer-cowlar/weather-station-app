@@ -42,3 +42,20 @@ export interface PutRequest<T> {
   url: string;
   data: T;
 }
+
+export interface RawDataPoint {
+  result: string;
+  table: number;
+  _measurement: string;
+  _start: string;
+  _stop: string;
+  _time: string;
+  location: string;
+  temperature: number;
+  humidity: number;
+}
+
+export interface ChartPoint {
+  x: string;
+  y: number;
+}
