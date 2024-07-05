@@ -16,8 +16,6 @@ let mqttClient: MqttClient | null = null;
 
 watch(weatherData, updatedWeatherData => {
   if (updatedWeatherData?.temperatureDataPoints && updatedWeatherData?.humidityDataPoints) {
-    // chartOptions.series[0].data = updatedWeatherData?.temperatureDataPoints;
-    // chartOptions.series[1].data = updatedWeatherData?.humidityDataPoints;
     charts.value?.chart?.series[0].setData(updatedWeatherData?.temperatureDataPoints);
     charts.value?.chart?.series[1].setData(updatedWeatherData?.humidityDataPoints);
     if (weatherHistoryIsLoading.value) {
@@ -105,17 +103,8 @@ const fetchWeatherHistory = async () => {
     const res = await getWeatherHistory();
     console.log(formatWeatherData(res.data));
     weatherData.value = formatWeatherData(res.data);
-    // setIsLoading((prevState) => ({
-    //   ...prevState,
-    //   featuredMovies: false
-    // }));
   } catch (error) {
     console.error(error);
-    // toast({
-    //   variant: "destructive",
-    //   title: "An error occured",
-    //   description: "There was a problem fetching featured movies."
-    // });
   }
 };
 
@@ -166,22 +155,6 @@ const setupMqttConn = () => {
             x: currentTimestamp,
             y: Number(weatherDataObj.weather_data.humidity),
           });
-
-          // chartOptions.series[0].data.push({
-          //   x: currentTimestamp,
-          //   y: weatherDataObj.weather_data.temperature,
-          // });
-          // chartOptions.series[1].data.push({
-          //   x: currentTimestamp,
-          //   y: weatherDataObj.weather_data.humidity,
-          // });
-          // charts.value?.chart?.update(
-          //   {
-          //     series: chartOptions.series,
-          //   },
-          //   true,
-          //   true,
-          // );
         }
       } catch (err) {
         console.error("Error while processing received message:", err);
@@ -205,7 +178,22 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="w-full h-full flex flex-row justify-center items-center text-center">
+    <div class="w-full absolute top-0 flex flex-row justify-between items-center px-4 py-3 bg-black/50">
+      <div class="flex flex-row justify-center items-center">
+        <img src="../../public/logo.svg" class="w-7 h-7 mr-2" />
+        <div class="flex flex-col items-start">
+          <h2 class="font-bold text-sm">WSA</h2>
+          <p class="text-xs font-light">Powered by Highcharts</p>
+        </div>
+      </div>
+      <div class="flex flex-row justify-center items-center gap-2 text-sm">
+        <p class="font-light"
+          >Logged in as <span class="font-bold">{{ "abdullah@gmail.com" }}</span></p
+        >
+        <button class="btn btn-sm">Signout</button>
+      </div>
+    </div>
     <!-- cover with a loader until data fetched and set from api -->
-    <highcharts :options="chartOptions" ref="charts"></highcharts>
+    <highcharts :options="chartOptions" ref="charts" class="w-[90vw] h-[50vh]"></highcharts>
   </div>
 </template>
