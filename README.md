@@ -1,8 +1,7 @@
 # weather-station-app
 
-#Setup
+## Setup
 
-```
-cd weather-station-app
-docker-compose up --build
-```
+- `cd weather-station-app`
+- `docker-compose up --build`
+- `docker-compose down --volumes --remove-orphans`
