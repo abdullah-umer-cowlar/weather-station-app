@@ -68,7 +68,7 @@ const handleLogin = async () => {
     <div class="h-full w-1/2">
       <img
         class="object-top object-cover w-full h-full"
-        src="https://cdn.pixabay.com/photo/2023/10/07/18/19/clouds-8300738_960_720.jpg"
+        src="https://cdn.pixabay.com/photo/2023/05/09/07/18/space-7980556_1280.jpg"
       />
     </div>
   </div>

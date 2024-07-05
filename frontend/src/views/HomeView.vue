@@ -3,8 +3,9 @@ import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import mqtt, { MqttClient } from "mqtt";
 import envConfig from "../lib/envConfig";
 import { getWeatherHistory } from "../services/weather.service";
-import { formatWeatherData } from "../lib/utils";
+import { formatWeatherData, removeSession } from "../lib/utils";
 import { ChartPoint } from "../lib/types";
+import { useRouter } from "vue-router";
 
 const charts = ref<any>(null);
 const weatherData = ref<{
@@ -13,6 +14,8 @@ const weatherData = ref<{
 }>();
 const weatherHistoryIsLoading = ref<boolean>(true);
 let mqttClient: MqttClient | null = null;
+
+const router = useRouter();
 
 watch(weatherData, updatedWeatherData => {
   if (updatedWeatherData?.temperatureDataPoints && updatedWeatherData?.humidityDataPoints) {
@@ -162,9 +165,14 @@ const setupMqttConn = () => {
     }
   });
 };
-Date.now();
+
+const signout = () => {
+  console.log("signout pressed");
+  removeSession();
+  router.push("/login");
+};
 onMounted(() => {
-  // maybe don't connect at all until historical data fetched
+  // maybe don't connect at all until historical data fetched ? idk - still better to be connecting in parallel even if weather data still loading
   setupMqttConn();
   fetchWeatherHistory();
 });
@@ -187,10 +195,13 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="flex flex-row justify-center items-center gap-2 text-sm">
-        <p class="font-light"
-          >Logged in as <span class="font-bold">{{ "abdullah@gmail.com" }}</span></p
-        >
-        <button class="btn btn-sm">Signout</button>
+        <p class="font-light">
+          Logged in as
+          <span class="font-bold">
+            {{ "abdullah@gmail.com" }}
+          </span>
+        </p>
+        <button @click="signout" class="btn btn-sm">Signout</button>
       </div>
     </div>
     <!-- cover with a loader until data fetched and set from api -->
