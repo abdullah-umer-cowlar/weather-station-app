@@ -1,0 +1,91 @@
+version: "3"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - 5173:5173
+    depends_on:
+      broker:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    environment:
+      VITE_BACKEND_URL: http://localhost:4000
+      VITE_BASE_URL: /
+      VITE_BROKER_HOST: localhost
+      VITE_BROKER_PORT: 8080
+      VITE_DATA_TOPIC: wsa
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - 4000:4000
+    depends_on:
+      broker:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+      influx:
+        condition: service_started
+    environment:
+      POSTGRES_DATABASE: wsa
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      JWT_SECRET: secret
+      JWT_EXPIRES_IN: 1h
+      PORT: 4000
+      BROKER_HOST: broker
+      BROKER_PORT: 1883
+      DATA_TOPIC: wsa
+      INFLUX_URL: http://influx:8086
+      INFLUX_TOKEN: cowlar_wsa_backend_influx_auth_token
+      INFLUX_ORG: cowlar_wsa
+      INFLUX_BUCKET: wsa
+      INFLUX_ADMIN_USERNAME: influx_wsa_admin
+      INFLUX_ADMIN_PASSWORD: influx_wsa_password
+
+  postgres:
+    image: postgres:latest
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: wsa
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - ./docker-postgres-init.sql:/docker-entrypoint-initdb.d/docker-postgres-init.sql
+
+  influx:
+    image: influxdb:2
+    restart: always
+    ports:
+      - 8086:8086
+    volumes:
+      - ./influxdb_wsa_data:/var/lib/influxdb2
+      - ./influxdb_wsa_config:/etc/influxdb2
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: influx_wsa_admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: influx_wsa_password
+      DOCKER_INFLUXDB_INIT_ORG: cowlar_wsa
+      DOCKER_INFLUXDB_INIT_BUCKET: wsa
+      DOCKER_INFLUXDB_INIT_RETENTION: 2h
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: cowlar_wsa_backend_influx_auth_token
+
+  broker:
+    image: vernemq/vernemq
+    ports:
+      - 1884:1883
+      - 8888:8888
+      - 8080:8080
+    environment:
+      - DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on
+      - DOCKER_VERNEMQ_ACCEPT_EULA=yes
